@@ -1,11 +1,17 @@
 package com.example.batch.batch_demo.job.fileimport;
 
+import org.springframework.batch.core.ExitStatus;
+import org.springframework.batch.core.ItemProcessListener;
+import org.springframework.batch.core.ItemReadListener;
+import org.springframework.batch.core.ItemWriteListener;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
-import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
+import org.springframework.batch.core.StepExecution;
+import org.springframework.batch.core.StepExecutionListener;
 import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.StepBuilder;
+import org.springframework.batch.item.Chunk;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemWriter;
@@ -35,11 +41,71 @@ public class FileImpotJobConfig {
     Step fileImportStep(JobRepository jobRepository,
             PlatformTransactionManager transactionManager) {
         return new StepBuilder("fileImportStep", jobRepository)
-                .<String, String>chunk(10, transactionManager)
+                .<String, String>chunk(2, transactionManager)
                 .reader(itemReader())
                 .processor(itemProcessor())
                 .writer(itemWriter())
                 .allowStartIfComplete(true)
+                .listener(new StepExecutionListener() {
+                    @Override
+                    public void beforeStep(StepExecution stepExecution) {
+                        log.info("beforeStep: {}", stepExecution);
+                    }
+
+                    @Override
+                    public ExitStatus afterStep(StepExecution stepExecution) {
+                        log.info("afterStep: {}", stepExecution);
+                        return stepExecution.getExitStatus();
+                    }
+                })
+                .listener(new ItemReadListener<String>() {
+                    @Override
+                    public void beforeRead() {
+                        log.info("beforeRead");
+                    }
+
+                    @Override
+                    public void afterRead(String item) {
+                        log.info("afterRead: {}", item);
+                    }
+
+                    @Override
+                    public void onReadError(Exception ex) {
+                        log.error("onReadError", ex);
+                    }
+                })
+                .listener(new ItemProcessListener<String, String>() {
+                    @Override
+                    public void beforeProcess(String item) {
+                        log.info("beforeProcess: {}", item);
+                    }
+
+                    @Override
+                    public void afterProcess(String item, String result) {
+                        log.info("afterProcess: {} -> {}", item, result);
+                    }
+
+                    @Override
+                    public void onProcessError(String item, Exception e) {
+                        log.error("onProcessError: {}", item, e);
+                    }
+                })
+                .listener(new ItemWriteListener<String>() {
+                    @Override
+                    public void beforeWrite(Chunk<? extends String> items) {
+                        log.info("beforeWrite: {}", items);
+                    }
+
+                    @Override
+                    public void afterWrite(Chunk<? extends String> item) {
+                        log.info("afterWrite: {}", item);
+                    }
+
+                    @Override
+                    public void onWriteError(Exception ex, Chunk<? extends String> item) {
+                        log.error("onWriteError: {}", item, ex);
+                    }
+                })
                 .build();
     }
 
