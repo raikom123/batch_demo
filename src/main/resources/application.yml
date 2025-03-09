@@ -1,0 +1,28 @@
+spring:
+  application:
+    name: batch_demo
+  datasource:
+    url: jdbc:postgresql://localhost:6543/batchtest
+    username: user
+    password: pass
+    driver-class-name: org.postgresql.Driver
+    # hikari:
+    #   maximum-pool-size: 10
+    #   minimum-idle: 5
+    #   idle-timeout: 30000
+    #   max-lifetime: 1800000
+    #   connection-timeout: 30000
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: update
+  batch:
+    job:
+      enabled: true
+    jdbc.initialize-schema: always
+
+logging:
+  # file:
+  #   path: log/batch.log
+  level:
+    root: INFO
