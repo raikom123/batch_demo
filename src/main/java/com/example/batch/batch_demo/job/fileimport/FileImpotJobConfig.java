@@ -119,7 +119,12 @@ public class FileImpotJobConfig {
     }
 
     ItemProcessor<String, String> itemProcessor() {
-        return String::toUpperCase;
+        return item -> {
+            if (item.contains("error")) {
+                throw new RuntimeException("error found");
+            }
+            return item.toUpperCase();
+        };
     }
 
     ItemWriter<String> itemWriter() {
