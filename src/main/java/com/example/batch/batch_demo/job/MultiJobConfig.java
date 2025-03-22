@@ -1,0 +1,56 @@
+package com.example.batch.batch_demo.job;
+
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.batch.core.Job;
+import org.springframework.batch.core.Step;
+import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
+import org.springframework.batch.core.configuration.annotation.JobScope;
+import org.springframework.batch.core.configuration.annotation.StepScope;
+import org.springframework.batch.core.job.builder.JobBuilder;
+import org.springframework.batch.core.launch.support.RunIdIncrementer;
+import org.springframework.batch.core.repository.JobRepository;
+import org.springframework.batch.core.repository.support.SimpleJobRepository;
+import org.springframework.batch.core.step.builder.StepBuilder;
+import org.springframework.batch.core.step.tasklet.Tasklet;
+import org.springframework.batch.item.ItemReader;
+import org.springframework.batch.item.ItemWriter;
+import org.springframework.batch.item.support.ListItemReader;
+import org.springframework.batch.repeat.RepeatStatus;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.transaction.PlatformTransactionManager;
+import com.example.batch.batch_demo.config.JobExecutionLoggingListener;
+import com.example.batch.batch_demo.config.StepExecutionLoggingListener;
+
+import lombok.extern.slf4j.Slf4j;
+
+@Configuration
+@Slf4j
+public class MultiJobConfig {
+
+    @Bean
+    Job job1(JobRepository jobRepository,
+            PlatformTransactionManager transactionManager) {
+        return new JobBuilder("job1", jobRepository)
+                .start(new StepBuilder("job1_step", jobRepository)
+                        .tasklet((stepContribution, chunkContext) -> RepeatStatus.FINISHED, transactionManager)
+                        .allowStartIfComplete(true)
+                        .build())
+                .build();
+    }
+
+    @Bean
+    Job job2(JobRepository jobRepository,
+            PlatformTransactionManager transactionManager) {
+        return new JobBuilder("job2", jobRepository)
+                .start(new StepBuilder("job2_step", jobRepository)
+                        .tasklet((stepContribution, chunkContext) -> RepeatStatus.FINISHED, transactionManager)
+                        .allowStartIfComplete(true)
+                        .build())
+                .build();
+    }
+
+}

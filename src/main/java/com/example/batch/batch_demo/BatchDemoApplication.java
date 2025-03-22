@@ -9,8 +9,10 @@ import com.example.batch.batch_demo.config.JobExecutionLoggingListener;
 public class BatchDemoApplication {
 
 	public static void main(String[] args) {
-		System.exit(SpringApplication.exit(SpringApplication.run(BatchDemoApplication.class, args),
-				new JobExecutionLoggingListener()));
+		System.exit(
+				SpringApplication.exit(
+						SpringApplication.run(BatchDemoApplication.class, args),
+						new JobExecutionLoggingListener()));
 	}
 
 }

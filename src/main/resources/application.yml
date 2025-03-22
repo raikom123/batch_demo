@@ -19,10 +19,12 @@ spring:
   batch:
     job:
       enabled: true
+      name: job1
     jdbc.initialize-schema: always
 
 logging:
   # file:
   #   path: log/batch.log
   level:
-    root: INFO
+    root: WARN
+    org.springframework.batch: INFO

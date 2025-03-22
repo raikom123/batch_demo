@@ -1,13 +1,8 @@
-package com.example.batch.batch_demo.job.fileimport;
+package com.example.batch.batch_demo.job;
 
-import org.springframework.batch.core.ExitStatus;
-import org.springframework.batch.core.ItemProcessListener;
-import org.springframework.batch.core.ItemReadListener;
 import org.springframework.batch.core.ItemWriteListener;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
-import org.springframework.batch.core.StepExecution;
-import org.springframework.batch.core.StepExecutionListener;
 import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.StepBuilder;
@@ -16,16 +11,20 @@ import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.batch.item.file.builder.FlatFileItemReaderBuilder;
+import org.springframework.batch.item.file.builder.FlatFileItemWriterBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.lang.NonNull;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import com.example.batch.batch_demo.config.JobExecutionLoggingListener;
+import com.example.batch.batch_demo.config.StepExecutionLoggingListener;
 
 import lombok.extern.slf4j.Slf4j;
 
-@Configuration
+// @Configuration
 @Slf4j
 public class FileImpotJobConfig {
 
@@ -34,6 +33,7 @@ public class FileImpotJobConfig {
         return new JobBuilder("fileImportJob", jobRepository)
                 .start(fileImportStep)
                 .listener(new JobExecutionLoggingListener())
+                // .incrementer(new RunIdIncrementer())
                 .build();
     }
 
@@ -45,64 +45,21 @@ public class FileImpotJobConfig {
                 .reader(itemReader())
                 .processor(itemProcessor())
                 .writer(itemWriter())
-                .allowStartIfComplete(true)
-                .listener(new StepExecutionListener() {
-                    @Override
-                    public void beforeStep(StepExecution stepExecution) {
-                        log.info("beforeStep: {}", stepExecution);
-                    }
-
-                    @Override
-                    public ExitStatus afterStep(StepExecution stepExecution) {
-                        log.info("afterStep: {}", stepExecution);
-                        return stepExecution.getExitStatus();
-                    }
-                })
-                .listener(new ItemReadListener<String>() {
-                    @Override
-                    public void beforeRead() {
-                        log.info("beforeRead");
-                    }
-
-                    @Override
-                    public void afterRead(String item) {
-                        log.info("afterRead: {}", item);
-                    }
-
-                    @Override
-                    public void onReadError(Exception ex) {
-                        log.error("onReadError", ex);
-                    }
-                })
-                .listener(new ItemProcessListener<String, String>() {
-                    @Override
-                    public void beforeProcess(String item) {
-                        log.info("beforeProcess: {}", item);
-                    }
-
-                    @Override
-                    public void afterProcess(String item, String result) {
-                        log.info("afterProcess: {} -> {}", item, result);
-                    }
-
-                    @Override
-                    public void onProcessError(String item, Exception e) {
-                        log.error("onProcessError: {}", item, e);
-                    }
-                })
+                .listener(new StepExecutionLoggingListener())
+                // .allowStartIfComplete(true)
                 .listener(new ItemWriteListener<String>() {
                     @Override
-                    public void beforeWrite(Chunk<? extends String> items) {
-                        log.info("beforeWrite: {}", items);
+                    public void beforeWrite(@NonNull Chunk<? extends String> items) {
+                        // log.info("beforeWrite: {}", items);
                     }
 
                     @Override
-                    public void afterWrite(Chunk<? extends String> item) {
-                        log.info("afterWrite: {}", item);
+                    public void afterWrite(@NonNull Chunk<? extends String> item) {
+                        item.getItems().forEach(log::info);
                     }
 
                     @Override
-                    public void onWriteError(Exception ex, Chunk<? extends String> item) {
+                    public void onWriteError(@NonNull Exception ex, @NonNull Chunk<? extends String> item) {
                         log.error("onWriteError: {}", item, ex);
                     }
                 })
@@ -128,7 +85,11 @@ public class FileImpotJobConfig {
     }
 
     ItemWriter<String> itemWriter() {
-        return items -> items.forEach(log::info);
+        return new FlatFileItemWriterBuilder<String>()
+                .name("fileImportItemWriter")
+                .resource(new FileSystemResource("data/batch_test_output.csv"))
+                .lineAggregator(item -> item)
+                .build();
     }
 
 }
