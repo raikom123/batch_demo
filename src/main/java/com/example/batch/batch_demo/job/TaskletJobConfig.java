@@ -5,13 +5,17 @@ import java.util.Map;
 
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
+import org.springframework.batch.core.StepContribution;
+import org.springframework.batch.core.StepExecution;
+import org.springframework.batch.core.StepExecutionListener;
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
 import org.springframework.batch.core.configuration.annotation.JobScope;
 import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.launch.support.RunIdIncrementer;
+import org.springframework.batch.core.listener.ExecutionContextPromotionListener;
 import org.springframework.batch.core.repository.JobRepository;
-import org.springframework.batch.core.repository.support.SimpleJobRepository;
+import org.springframework.batch.core.scope.context.ChunkContext;
 import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.core.step.tasklet.Tasklet;
 import org.springframework.batch.item.ItemReader;
@@ -29,28 +33,47 @@ import lombok.extern.slf4j.Slf4j;
 
 @Configuration
 @Slf4j
-public class MultiJobConfig {
+public class TaskletJobConfig {
 
     @Bean
-    Job job1(JobRepository jobRepository,
-            PlatformTransactionManager transactionManager) {
-        return new JobBuilder("job1", jobRepository)
-                .start(new StepBuilder("job1_step", jobRepository)
-                        .tasklet((stepContribution, chunkContext) -> RepeatStatus.FINISHED,
-                                transactionManager)
-                        .build())
+    Job taskletJob(JobRepository jobRepository, Step taskletStep) {
+        return new JobBuilder("taskletJob", jobRepository)
+                .start(taskletStep)
                 .build();
     }
 
     @Bean
-    Job job2(JobRepository jobRepository,
+    Step taskletStep(JobRepository jobRepository,
             PlatformTransactionManager transactionManager) {
-        return new JobBuilder("job2", jobRepository)
-                .start(new StepBuilder("job2_step", jobRepository)
-                        .tasklet((stepContribution, chunkContext) -> RepeatStatus.FINISHED,
-                                transactionManager)
-                        .build())
+        return new StepBuilder("taskletStep", jobRepository)
+                .tasklet(tasklet(), transactionManager)
                 .build();
+    }
+
+    Tasklet tasklet() {
+        return new TaskletImpl();
+    }
+
+    private class TaskletImpl implements Tasklet, StepExecutionListener {
+
+        private StepExecution stepExecution;
+
+        @Override
+        public RepeatStatus execute(StepContribution contribution, ChunkContext chunkContext) throws Exception {
+            var context = stepExecution.getJobExecution().getExecutionContext();
+            var count = context.getInt("count", 0);
+            log.info("count: {}", count++);
+            context.putInt("count", count);
+            if (count < 5) {
+                return RepeatStatus.CONTINUABLE;
+            }
+            return RepeatStatus.FINISHED;
+        }
+
+        @Override
+        public void beforeStep(StepExecution stepExecution) {
+            this.stepExecution = stepExecution;
+        }
     }
 
 }

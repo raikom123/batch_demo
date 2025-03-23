@@ -19,8 +19,10 @@ spring:
   batch:
     job:
       enabled: true
-      name: job1
+      # name: job1
     jdbc.initialize-schema: always
+
+spring.batch.job.name: fileImportJob
 
 logging:
   # file:
@@ -28,3 +30,7 @@ logging:
   level:
     root: WARN
     org.springframework.batch: INFO
+    com.example.batch.batch_demo: INFO
+  pattern:
+    console: "%msg%n"
+    # file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
