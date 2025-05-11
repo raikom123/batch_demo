@@ -1,6 +1,5 @@
 package com.example.batch.batch_demo.job;
 
-import org.springframework.batch.core.ItemWriteListener;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.StepExecution;
@@ -12,18 +11,13 @@ import org.springframework.batch.item.Chunk;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemWriter;
-import org.springframework.batch.item.adapter.ItemWriterAdapter;
 import org.springframework.batch.item.file.builder.FlatFileItemReaderBuilder;
-import org.springframework.batch.item.file.builder.FlatFileItemWriterBuilder;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.ClassPathResource;
-import org.springframework.core.io.FileSystemResource;
 import org.springframework.lang.NonNull;
 import org.springframework.transaction.PlatformTransactionManager;
-
-import com.example.batch.batch_demo.config.JobExecutionLoggingListener;
-import com.example.batch.batch_demo.config.StepExecutionLoggingListener;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -32,7 +26,7 @@ import lombok.extern.slf4j.Slf4j;
 public class FileImpotJobConfig {
 
     @Bean
-    Job fileImportJob(JobRepository jobRepository, Step fileImportStep) {
+    Job fileImportJob(JobRepository jobRepository, @Qualifier("fileImportStep") Step fileImportStep) {
         return new JobBuilder("fileImportJob", jobRepository)
                 .start(fileImportStep)
                 .build();
